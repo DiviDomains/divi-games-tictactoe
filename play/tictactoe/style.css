@@ -1,0 +1,153 @@
+/* Tic-tac-toe: the board and the bot panel. Everything shared with the other games is in ../brand.css. */
+
+.board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: min(100%, 360px); margin: 16px auto; }
+.cell {
+  aspect-ratio: 1; min-height: 0; padding: 0; border-radius: 14px;
+  border: 1px solid var(--line); background: var(--cell); color: var(--text);
+  font-size: clamp(2.2rem, 13vw, 3.6rem); font-weight: 800; line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.cell:hover:not(:disabled) { transform: none; box-shadow: none; }
+.cell.playable { cursor: pointer; }
+.cell.playable:hover, .cell.playable:focus-visible { background: var(--cell-hover); border-color: var(--accent-border); }
+.cell:disabled { opacity: 1; cursor: default; }
+.cell.x { color: var(--x); text-shadow: 0 0 18px rgba(233, 69, 96, 0.45); }
+.cell.o { color: var(--o); text-shadow: 0 0 18px rgba(129, 140, 248, 0.45); }
+.cell.pending { opacity: 0.5; }
+.cell.win { border-color: var(--accent); background: rgba(99, 102, 241, 0.18); box-shadow: 0 0 22px var(--accent-glow); }
+/* the bot's planned move, and the reply it expects, drawn faintly on the empty squares */
+.cell.proposed { opacity: 0.55; border: 2px dashed currentColor; text-shadow: none; animation: breathe 1.6s ease-in-out infinite; }
+.cell.expected { opacity: 0.22; border-style: dashed; text-shadow: none; }
+@keyframes breathe { 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .cell.proposed, .net-badge::before { animation: none; } }
+
+.g-status { text-align: center; font-weight: 600; color: var(--text); margin: 4px 0; }
+.urgent { text-align: center; font-weight: 700; color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn); border-radius: 8px; padding: 8px 10px; margin: 6px 0; }
+.alert-opt { text-align: center; margin: 6px 0; font-size: 0.85rem; color: var(--text-2); }
+.alert-opt label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.alert-opt .note { margin: 4px 0 0; font-size: 0.8rem; }
+.g-meta { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 14px 0; font-size: 0.875rem; }
+.g-meta dt { color: var(--muted); }
+.g-meta dd { margin: 0; overflow-wrap: anywhere; color: var(--text-2); }
+
+/* ---------- play a bot (lobby) ---------- */
+
+.bots { border-color: var(--accent-border); background: linear-gradient(135deg, rgba(99, 102, 241, 0.14), rgba(36, 37, 56, 0.8) 60%); }
+.bots .btns { margin: 14px 0 4px; }
+.muted-on-accent { font-weight: 500; opacity: 0.8; }
+
+/* ---------- the bot panel ---------- */
+
+.bot-panel { border-color: var(--accent-border); }
+.bot-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.bot-head h2 { margin: 0; display: flex; align-items: center; gap: 10px; }
+.bot-head h2 .mark {
+  display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line);
+}
+.bot-head h2 .mark:empty { display: none; }
+.pace { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
+.pace select { width: auto; min-height: 34px; padding: 4px 10px; font-size: 0.85rem; }
+
+.bot-think { background: rgba(15, 15, 26, 0.45); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.bot-plan { margin: 0 0 10px; font-size: 1.1rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.bot-line { margin: 6px 0; font-size: 0.925rem; display: grid; grid-template-columns: 3.5rem 1fr; gap: 10px; align-items: baseline; }
+.bot-verdict { margin: 12px 0; padding-top: 10px; border-top: 1px solid var(--line-soft); color: var(--muted); font-size: 0.875rem; font-style: italic; }
+#bot-outcome[data-kind="win"], .alt.win { background: var(--ok-bg); color: var(--ok-text); border-color: rgba(34, 197, 94, 0.3); }
+#bot-outcome[data-kind="draw"], .alt.draw { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent-border); }
+#bot-outcome[data-kind="loss"], .alt.loss { background: var(--err-bg); color: var(--err-text); border-color: rgba(239, 68, 68, 0.3); }
+
+.bot-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 12px 0 4px; }
+.bot-count { font-size: 0.85rem; font-weight: 600; color: var(--warn); font-variant-numeric: tabular-nums; }
+.bot-think .note { margin: 14px 0 8px; font-size: 0.8rem; }
+.bot-alts { display: flex; flex-wrap: wrap; gap: 6px; }
+.alt {
+  min-height: 30px; padding: 3px 10px; font-size: 0.78rem; font-weight: 600; border-radius: 999px;
+  border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); color: var(--text-2);
+}
+.alt:hover:not(:disabled) { transform: translateY(-1px); box-shadow: none; filter: brightness(1.2); }
+.alt.on { outline: 2px solid currentColor; outline-offset: 1px; }
+
+.bot-idle { margin: 0; padding: 12px 14px; border-radius: 12px; background: rgba(15, 15, 26, 0.45); border: 1px solid var(--line); color: var(--text-2); }
+.bot-again { margin-top: 12px; }
+.bot-again:has(button[hidden]) { display: none; }
+
+.bot-log { margin: 0; padding: 0; list-style: none; counter-reset: move; }
+.bot-log li { counter-increment: move; position: relative; padding: 8px 0 8px 2.2rem; border-top: 1px solid var(--line-soft); font-size: 0.9rem; }
+.bot-log li:first-child { border-top: 0; }
+.bot-log li::before { content: counter(move); position: absolute; left: 0; top: 9px; width: 1.5rem; text-align: right; color: var(--muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.bot-log .how { color: var(--muted); font-size: 0.8rem; }
+.bot-log .sub { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+.bot-log:empty::after { content: "No moves yet."; color: var(--muted); font-size: 0.875rem; }
+
+/* ---------- on the chain (the panel beside the table) ---------- */
+
+body:has(#game:not([hidden])) { max-width: 1180px; }
+.game-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 20px; align-items: start; }
+.game-main { min-width: 0; }
+.chain-panel { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; overscroll-behavior: contain; font-size: 0.875rem; }
+.chain-panel h2 { margin-bottom: 4px; }
+.chain-panel > .note { margin: 0 0 12px; font-size: 0.8rem; }
+@media (max-width: 900px) {
+  .game-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .chain-panel { position: static; max-height: none; overflow: visible; }
+}
+
+.mono { font-family: var(--mono); font-size: 0.8em; overflow-wrap: anywhere; }
+.cp-dim { color: var(--muted); font-size: 0.8rem; }
+.cp-ok { color: var(--ok-text); font-weight: 600; }
+.cp-bad { color: var(--err-text); font-weight: 600; }
+.cp-sec { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.cp-sec h3 { margin: 0 0 4px; font-size: 0.95rem; color: var(--text); }
+.cp-sec > .cp-dim { margin: 0 0 10px; }
+
+.cp-heads { display: grid; gap: 6px; }
+.cp-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.cp-chain { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid; }
+.cp-chain.side { color: var(--accent-ink); background: var(--accent-soft); border-color: var(--accent-border); }
+.cp-chain.divi { color: #c4b5fd; background: rgba(139, 92, 246, 0.16); border-color: rgba(139, 92, 246, 0.4); }
+
+.cp-players { display: grid; gap: 8px; }
+.cp-player { background: rgba(15, 15, 26, 0.45); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 4px; }
+.cp-player.x { border-left: 3px solid var(--x); }
+.cp-player.o { border-left: 3px solid var(--o); }
+.cp-player-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cp-addr { overflow-wrap: anywhere; }
+.cp-reveal { justify-self: start; margin-top: 4px; min-height: 30px; padding: 3px 10px; font-size: 0.78rem; }
+.cp-phrase { margin-top: 6px; padding: 10px; border-radius: 10px; border: 1px dashed var(--warn); background: rgba(245, 158, 11, 0.06); }
+.cp-words { margin: 0 0 6px; padding-left: 1.8rem; columns: 3; column-gap: 1.6rem; font-family: var(--mono); font-size: 0.8rem; color: var(--text); }
+.cp-phrase .cp-dim { margin: 0; }
+
+.cp-txs { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.cp-tx { background: rgba(15, 15, 26, 0.45); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.cp-tx.x { border-left: 3px solid var(--x); }
+.cp-tx.o { border-left: 3px solid var(--o); }
+.cp-tx.failed { border-color: rgba(239, 68, 68, 0.4); }
+.cp-tx-top { display: flex; align-items: center; gap: 8px; }
+.cp-what { flex: 1; font-weight: 600; color: var(--text); }
+.cp-pill { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; border: 1px solid var(--line); }
+.cp-pill.info { color: var(--text-2); background: rgba(255, 255, 255, 0.05); }
+.cp-pill.accent { color: var(--accent-ink); background: var(--accent-soft); border-color: var(--accent-border); }
+.cp-pill.ok { color: var(--ok-text); background: var(--ok-bg); border-color: rgba(34, 197, 94, 0.3); }
+.cp-pill.err { color: var(--err-text); background: var(--err-bg); border-color: rgba(239, 68, 68, 0.3); }
+
+.cp-steps { list-style: none; margin: 8px 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.cp-steps li { font-size: 0.7rem; color: var(--muted); padding-top: 6px; border-top: 3px solid var(--line); }
+.cp-steps li.on { color: var(--text-2); border-top-color: var(--accent); }
+.cp-steps li.bad { color: var(--err-text); border-top-color: var(--err-text); }
+
+.cp-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; margin: 0; font-size: 0.8rem; }
+.cp-facts dt { color: var(--muted); }
+.cp-facts dd { margin: 0; color: var(--text-2); overflow-wrap: anywhere; }
+.cp-events { margin: 0; padding: 0; list-style: none; }
+.cp-more { margin-top: 8px; font-size: 0.8rem; }
+.cp-more summary { cursor: pointer; color: var(--accent-ink); }
+.cp-body { margin: 6px 0; padding: 8px 10px; border-radius: 8px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--line-soft); font-family: var(--mono); font-size: 0.72rem; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-2); }
+
+/* A friend who opened a table link, and the host's invite control */
+.arrival { margin: 12px 0; padding: 12px 14px; border: 1px solid var(--accent-border); border-radius: 10px; background: var(--accent-soft); }
+.arrival p { margin: 0 0 8px; }
+.arrival button { margin: 0; }
+.invite { margin-top: 16px; padding-top: 4px; border-top: 1px solid var(--line); }
+.invite h3 { margin: 12px 0 4px; }
+.invite input { min-width: 0; }

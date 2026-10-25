@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0f0f1a">
+  <title>Tic-tac-toe · DiviGames</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/static/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="../brand.css">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="top">
+    <a class="logo" href="/play/" title="All DiviGames">
+      <span class="logo-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18.5c-3.86-.95-6.5-4.95-6.5-8.5V8.3l6.5-3.25 6.5 3.25V12c0 3.55-2.64 7.55-6.5 8.5z"/></svg></span>
+      <span class="logo-text">DiviGames</span>
+      <span class="logo-page">Tic-tac-toe</span>
+    </a>
+    <span class="spacer"></span>
+    <span class="net-badge" title="Testnet: GOLD here has no value">Testnet</span>
+    <span id="conn" class="conn" data-state="off" title="Chain connection">offline</span>
+  </header>
+
+  <section class="card wallet" aria-labelledby="wallet-h">
+    <h2 id="wallet-h" class="visually-hidden">Your play key</h2>
+    <div class="wallet-row">
+      <div class="wallet-id">
+        <span class="label">You</span>
+        <code id="me" class="addr">…</code>
+        <button id="copy-addr" class="ghost small" type="button">Copy</button>
+      </div>
+      <div class="wallet-bal">
+        <span class="label">Balance</span>
+        <strong id="balance">…</strong> <span>GOLD</span>
+        <button id="faucet" type="button">Get GOLD</button>
+      </div>
+    </div>
+    <p id="rank-line" class="muted small-text" hidden></p>
+    <p id="wallet-msg" class="msg" role="status" hidden></p>
+    <details class="keybox">
+      <summary>Play key</summary>
+      <p class="note">This is a <strong>testnet play key</strong>, made by this page and kept in this browser's
+        storage. It only holds testnet GOLD, which has no value. Anyone who can read this browser's storage can use it.
+        Export it to play from another device, or import one you already have.</p>
+      <div class="keyrow">
+        <button id="export" class="ghost" type="button">Show WIF</button>
+        <code id="wif" class="wif" hidden></code>
+      </div>
+      <form id="import" class="keyrow">
+        <label for="import-wif" class="visually-hidden">WIF to import</label>
+        <input id="import-wif" name="wif" autocomplete="off" spellcheck="false" placeholder="Paste a testnet WIF (starts with c)">
+        <button type="submit" class="ghost">Import</button>
+      </form>
+      <p id="key-msg" class="msg" role="status" hidden></p>
+    </details>
+  </section>
+
+  <main>
+    <section id="lobby" aria-labelledby="lobby-h">
+      <div class="card bots">
+        <h2>Play a bot</h2>
+        <p class="note">The bot sees the whole game tree, so it never loses. Before each move it tells you what it
+          will play, why, and what it expects back. You approve it, pick another move for it, or let it play on a timer.
+          Bot tables have no stake, so you need no GOLD. On your own open table, press Let the bot join; if that table
+          has a stake, the bot matches it, and since it never loses, a stake against it can only cost you.</p>
+        <p class="note">The bots live in this browser and move only while this page is open. Close it mid-game and the
+          game waits for you; a bot never claims a timeout.</p>
+        <div class="btns">
+          <button id="vs-bot" type="button" disabled>Play the bot <span class="muted-on-accent">(you are X)</span></button>
+          <button id="watch-bots" class="ghost" type="button" disabled>Watch two bots</button>
+        </div>
+        <p id="bot-lobby-msg" class="msg" role="status" hidden></p>
+        <h3>Bot tables</h3>
+        <ul id="bot-list" class="games"><li class="muted">Loading…</li></ul>
+      </div>
+
+      <form id="create" class="card">
+        <h2 id="lobby-h">New table</h2>
+        <div class="fields">
+          <label>Stake <span class="muted">(GOLD, each player)</span>
+            <input name="stake" inputmode="decimal" value="0" autocomplete="off">
+          </label>
+          <label>Opponent <span class="muted">(optional address)</span>
+            <input name="opponent" autocomplete="off" spellcheck="false" placeholder="Anyone can join">
+          </label>
+        </div>
+        <button type="submit">Create table</button>
+        <p class="msg" role="status" hidden></p>
+      </form>
+
+      <div id="invited" class="card" hidden>
+        <h2>Invited to you</h2>
+        <ul id="invited-list" class="games"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Open tables</h2>
+        <ul id="open-list" class="games"><li class="muted">Loading…</li></ul>
+        <p id="open-msg" class="msg" role="status" hidden></p>
+      </div>
+
+      <div class="card">
+        <h2>My games</h2>
+        <ul id="my-list" class="games"><li class="muted">Loading…</li></ul>
+      </div>
+    </section>
+
+    <section id="game" aria-labelledby="game-h" hidden>
+      <p><a href="#" class="back">← Lobby</a></p>
+      <div class="game-grid">
+      <div class="game-main">
+      <div class="card">
+        <h2 id="game-h">Table <code id="g-id"></code></h2>
+        <div id="banner" class="banner" hidden></div>
+        <p id="g-status" class="g-status"></p>
+        <p id="g-urgent" class="urgent" role="alert" hidden></p>
+        <div class="alert-opt">
+          <label><input id="alert-toggle" type="checkbox"> Tell me when it's my move</label>
+          <p id="alert-note" class="note" role="status" hidden></p>
+        </div>
+        <div id="arrival" class="arrival" hidden>
+          <p id="arrival-text"></p>
+          <button id="arrival-faucet" type="button" hidden>Get GOLD</button>
+        </div>
+        <div id="board" class="board" role="grid" aria-label="Board"></div>
+        <dl class="g-meta">
+          <dt>Stake</dt><dd id="g-stake"></dd>
+          <dt><span class="mark x">X</span></dt><dd id="g-x"></dd>
+          <dt><span class="mark o">O</span></dt><dd id="g-o"></dd>
+        </dl>
+        <div class="actions">
+          <button id="g-join" type="button" hidden>Join</button>
+          <button id="g-bot-join" type="button" hidden>Let the bot join</button>
+          <button id="g-cancel" class="ghost" type="button" hidden>Cancel table</button>
+          <button id="g-claim" class="ghost" type="button" hidden>Claim timeout</button>
+        </div>
+        <p id="g-msg" class="msg" role="status" hidden></p>
+        <div id="rematch" class="invite" hidden>
+          <p id="rematch-offer" class="note" hidden></p>
+          <p id="rematch-note" class="note" hidden></p>
+          <div class="actions">
+            <button id="rematch-btn" type="button" hidden>Rematch</button>
+            <a id="rematch-join" class="btn" href="#" hidden>Join rematch</a>
+          </div>
+          <p id="rematch-msg" class="msg" role="status" hidden></p>
+        </div>
+        <div id="invite" class="invite" hidden>
+          <h3>Invite a friend</h3>
+          <p id="invite-for" class="note" hidden></p>
+          <div class="keyrow">
+            <label for="invite-url" class="visually-hidden">Invite link</label>
+            <input id="invite-url" readonly spellcheck="false">
+            <button id="invite-copy" class="ghost" type="button">Copy invite link</button>
+            <a id="invite-tg" class="btn ghost" href="https://t.me/share/url" target="_blank" rel="noopener noreferrer">Share on Telegram</a>
+          </div>
+          <p id="invite-msg" class="msg" role="status" hidden></p>
+        </div>
+      </div>
+
+      <div id="bot" class="card bot-panel" hidden aria-live="polite">
+        <div class="bot-head">
+          <h2><span id="bot-mark" class="mark"></span> <span id="bot-title">The bot</span></h2>
+          <label class="pace">Pace
+            <select id="bot-pace">
+              <option value="ask">Ask me before each move</option>
+              <option value="3">Play every 3 seconds</option>
+              <option value="8">Play every 8 seconds</option>
+              <option value="15">Play every 15 seconds</option>
+            </select>
+          </label>
+        </div>
+        <div id="bot-think" class="bot-think">
+          <p class="bot-plan"><span id="bot-plan"></span> <span id="bot-outcome" class="badge"></span></p>
+          <p class="bot-line"><span class="label">Why</span> <span id="bot-why"></span></p>
+          <p class="bot-line"><span class="label">Then</span> <span id="bot-next"></span></p>
+          <p id="bot-verdict" class="bot-verdict"></p>
+          <div class="bot-actions">
+            <button id="bot-ok" type="button">Approve</button>
+            <button id="bot-other" class="ghost" type="button">Pick another</button>
+            <span id="bot-count" class="bot-count"></span>
+          </div>
+          <p class="note">Or tap any free square, or one of these, to make the bot play it instead:</p>
+          <div id="bot-alts" class="bot-alts"></div>
+        </div>
+        <p id="bot-idle" class="bot-idle" hidden></p>
+        <div class="bot-again"><button id="bot-again" type="button" hidden>Play again</button></div>
+        <h3>Moves</h3>
+        <ol id="bot-log" class="bot-log"></ol>
+      </div>
+      </div>
+
+      <aside id="chainpanel" class="card chain-panel" aria-labelledby="chain-h">
+        <h2 id="chain-h">On the chain</h2>
+        <p class="note">What each play does on the Divi Games sidechain, and how that is sealed on Divi itself. Links open the explorers, or the raw data.</p>
+        <div id="chain-body" aria-live="polite"></div>
+      </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="muted small-text">Chain: <code id="chain-url"></code></footer>
+</body>
+</html>
