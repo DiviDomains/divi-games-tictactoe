@@ -507,13 +507,33 @@ async function loadGame() {
 // ---------- rematch ----------
 
 let rematchBusy = false;
+let rematchAgain = false;
 
-/** Look for the rematch table of the finished game in view: the one you made, or the one the other player made for you. */
+/**
+ * Look for the rematch table of the finished game in view: the one you made, or the one the other player made for you.
+ * A call while a look is running is not dropped but runs once it ends: the block that brought the other player's table
+ * may come in while an older look, which read the chain before that table existed, is still paging through transactions.
+ */
 async function loadRematch() {
+  if (rematchBusy) {
+    rematchAgain = true;
+    return;
+  }
+  rematchBusy = true;
+  try {
+    do {
+      rematchAgain = false;
+      await lookForRematch();
+    } while (rematchAgain);
+  } finally {
+    rematchBusy = false;
+  }
+}
+
+async function lookForRematch() {
   const g = state.game;
   const id = state.gameId;
-  if (!g || !id || rematchBusy || !rematchParams(g, state.me) || botSeats(g)) return;
-  rematchBusy = true;
+  if (!g || !id || !rematchParams(g, state.me) || botSeats(g)) return;
   try {
     const [mine, invited] = await Promise.all([chain.game(GAME, { player: state.me }).then(gamesOf), invitedTables()]);
     if (state.gameId !== id) return;
@@ -524,8 +544,6 @@ async function loadRematch() {
     }
   } catch {
     /* the button still works; the offer shows on the next block */
-  } finally {
-    rematchBusy = false;
   }
 }
 

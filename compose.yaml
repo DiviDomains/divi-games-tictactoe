@@ -1,0 +1,9 @@
+# docker compose up --build    then open http://localhost:8081/play/tictactoe/
+# docker compose down           to stop it
+services:
+  tictactoe:
+    build: .
+    # Only this computer can open it. To let your home network in too, make it "8081:8081".
+    ports:
+      - "127.0.0.1:8081:8081"
+    restart: unless-stopped

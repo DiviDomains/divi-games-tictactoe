@@ -1,5 +1,8 @@
 // Turn alerts for tic-tac-toe tables: what the tab title and the alert text say for a game and a viewer, and what the
-// "Tell me when it's my move" toggle may do. Pure functions, no DOM, so tests/sdk/turn-alert.test.mjs can run them.
+// "Tell me when it's my move" toggle may do (notifyPlan, shared with blackjack in ../notify.js). Pure functions, no DOM,
+// so tests/sdk/turn-alert.test.mjs can run them.
+
+export { notifyPlan } from '../notify.js';
 
 export const BASE_TITLE = 'Tic-tac-toe · DiviGames';
 /** The page calls it urgent when the player on the move has this long (or less) before the other can claim a timeout. */
@@ -71,18 +74,4 @@ export function shouldNotify(prevKind, kind) {
   if (prevKind === undefined || prevKind === kind) return false;
   if (prevKind === 'joined' && kind === 'your-move') return false;
   return NEWS.has(kind);
-}
-
-/**
- * What the "Tell me when it's my move" toggle does when clicked (or restored from the saved choice).
- * `ask`: call Notification.requestPermission() (only ever from a click). `on`: notifications are enabled. `note`: what
- * to tell the player when they cannot be.
- * @param {{supported: boolean, permission: string, wanted: boolean}} o
- */
-export function notifyPlan({ supported, permission, wanted }) {
-  if (!wanted) return { ask: false, on: false, note: '' };
-  if (!supported) return { ask: false, on: false, note: 'This browser does not support notifications. The tab title still shows when it is your move.' };
-  if (permission === 'denied') return { ask: false, on: false, note: 'Notifications are blocked for this site in your browser settings. The tab title still shows when it is your move.' };
-  if (permission === 'granted') return { ask: false, on: true, note: '' };
-  return { ask: true, on: false, note: '' };
 }

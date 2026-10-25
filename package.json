@@ -1,0 +1,16 @@
+{
+  "name": "divi-games-tictactoe",
+  "private": true,
+  "description": "Two players, nine squares, every move a signed transaction. Play a bot that explains each move, or watch two bots play.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "config": {
+    "port": 8081
+  },
+  "scripts": {
+    "start": "node serve.mjs --open"
+  }
+}
