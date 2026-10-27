@@ -6,7 +6,7 @@
 
 import { Chain, Key, NETWORK, formatAmount, parseAmount, isAddress, txBody, txidOf, localTime, timeLeft, readableError, setTextWithLinks, faucetFastNote } from '../../sdk/divigames.js';
 import { mountWallets } from '../../sdk/connect.js';
-import { showRank } from '../rank.js';
+import { showRank, refreshRank } from '../rank.js';
 import { generateMnemonic, keyFromMnemonic, validateMnemonic } from '../../sdk/hd.js';
 import { CELL_NAMES as CELL, LINES, rankMoves } from './bot.js';
 
@@ -17,6 +17,7 @@ import { createChainLog } from './chainlog.js';
 import { inviteUrl, idFromHash, shareText, telegramShareUrl, arrival } from './invite.js';
 import { BASE_TITLE, turnAlert, shouldNotify, notifyPlan } from './alerts.js';
 import { rematchParams, findRematch } from './rematch.js';
+import { endStatus } from './endstatus.js';
 import { normGame, gamesOf, invitedTables as invitedTablesFor, openExpiredAt } from './tables.js';
 
 const GAME = 'tictactoe';
@@ -65,6 +66,10 @@ const state = {
   alert: { /** @type {string|undefined} */ kind: undefined, wasOpen: false, notify: false },
   /** The rematch table for the finished game in view: one to join, or one you made and wait on. @type {{kind: 'join'|'wait', table: any}|null} */
   rematch: null,
+  /** The ids of games this page has seen you play, so a finish in the block feed can be told apart as yours. */
+  mine: /** @type {Set<string>} */ (new Set()),
+  /** The addresses the rank line was last read for. */
+  rankFor: '',
 };
 
 // ---------- small helpers ----------
@@ -257,7 +262,12 @@ async function refreshAccount() {
     state.balance = BigInt(balanceOf(acct, 'GOLD'));
     $('balance').textContent = gold(String(state.balance));
     if (state.game) renderGame(); // the Join button and the arrival note depend on the balance
-    showRank($('rank-line'), GAME, [state.me, state.key.address]);
+    // Read once per address; after a game of yours finishes, onBlock asks again (refreshRank).
+    const addrs = [state.me, state.key.address];
+    if (state.rankFor !== addrs.join()) {
+      state.rankFor = addrs.join();
+      showRank($('rank-line'), GAME, addrs);
+    }
   } catch (e) {
     $('balance').textContent = '?';
     say($('wallet-msg'), `Could not reach the chain: ${errText(e)}`, 'error');
@@ -416,6 +426,7 @@ async function refreshLobby() {
     // Newest first for people browsing.
     fillList($('open-list'), gamesOf(open).filter((g) => !openExpired(g)).reverse(), 'No open tables. Create one.');
     const my = gamesOf(mine).reverse();
+    for (const g of my) state.mine.add(g.id);
     const rank = (/** @type {any} */ g) => (g.status === 'playing' ? (g[g.turn] === state.me ? 0 : 1) : g.status === 'open' ? 2 : 3);
     my.sort((a, b) => rank(a) - rank(b));
     fillList($('my-list'), my, 'You have not played yet.', { showStatus: true, trim: true });
@@ -493,6 +504,7 @@ async function loadGame() {
     const g = normGame(await chain.game(GAME, { id }));
     if (state.gameId !== id) return; // navigated away meanwhile
     state.game = g;
+    if (g.x === state.me || g.o === state.me) state.mine.add(g.id);
     say($('g-msg'), $('g-msg').dataset.kind === 'error' ? $('g-msg').textContent ?? '' : '', 'error');
     renderGame();
     loadRematch();
@@ -621,7 +633,7 @@ function renderGame() {
   else if (g.status === 'playing') {
     const turnName = g.turn.toUpperCase();
     status = myTurn ? `Your move (${turnName}).` : `${turnName} to move: ${who(g[g.turn])}.`;
-  }
+  } else status = endStatus(g, me, { who, bots: botSeats(g), rematch: state.rematch }) ?? '';
   $('g-status').textContent = status;
   renderBot();
 
@@ -1157,14 +1169,18 @@ function onBlock(/** @type {any} */ block) {
   let lobbyDirty = false;
   let gameDirty = false;
   let touchesMe = false;
+  let finished = false;
   for (const r of block?.receipts ?? []) {
     for (const ev of r?.events ?? []) {
       const kind = String(ev?.kind ?? '');
       if (kind.startsWith(`${GAME}.`)) lobbyDirty = true;
       if (state.gameId && String(ev?.data?.id ?? '') === state.gameId) gameDirty = true;
       if (JSON.stringify(ev?.data ?? {}).includes(state.me)) touchesMe = true;
+      // A result of yours (not a cancelled table) is in the leaderboard once the site's indexer has read this block.
+      if (kind === `${GAME}.finished` && state.mine.has(String(ev?.data?.id ?? '')) && /^(draw|x_won|o_won)$/.test(String(ev?.data?.result ?? ''))) finished = true;
     }
   }
+  if (finished && Number.isFinite(h)) refreshRank($('rank-line'), GAME, [state.me, state.key.address], h);
   if (touchesMe) refreshAccount();
   if (gameDirty) loadGame();
   else if (state.gameId && state.game) renderGame(); // height moved: update the timeout countdown

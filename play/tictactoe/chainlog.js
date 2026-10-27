@@ -7,7 +7,7 @@
 // It waits only for its previous anchor to reach a Divi block, so a move is sealed within a minute or two.
 // The panel follows a move through those stages, with links to the raw data and the Divi explorer.
 
-import { formatAmount, verifyMessage } from '../../sdk/divigames.js';
+import { formatAmount, siteUrl, verifyMessage } from '../../sdk/divigames.js';
 import { CELL_NAMES } from './bot.js';
 
 const EXPLORER = 'https://services.divi.domains/testnet/explorer2';
@@ -299,13 +299,13 @@ export function createChainLog({ chain, root, identify }) {
 
     const facts = el('dl', { class: 'cp-facts' },
       ...row('Signed by', `${w.name} · nonce ${e.nonce}`),
-      ...row('Txid', link(`/explorer/tx/${e.txid}`, short(e.txid, 16), 'The transaction in the Divi Games explorer'),
+      ...row('Txid', link(siteUrl(`/explorer/tx/${e.txid}`), short(e.txid, 16), 'The transaction in the Divi Games explorer'),
         ' · ', link(`${chain.baseUrl}/v1/tx/${e.txid}`, 'raw JSON', 'The transaction and its receipt (raw JSON)')),
       ...row('Signature', el('span', { class: 'mono' }, short(e.sig, 12)), ' ',
         e.verified ? el('span', { class: 'cp-ok' }, '✓ checked here') : el('span', { class: 'cp-bad' }, '✗ does not match')),
       ...(e.stage === 'failed' ? row('Error', e.error ?? 'rejected') : []),
       ...(b ? [
-        ...row('Block', link(`/explorer/block/${e.height}`, `#${e.height}`, 'The block in the Divi Games explorer'), ` · tx ${Number(e.index) + 1} of ${b.txids?.length ?? '?'}`),
+        ...row('Block', link(siteUrl(`/explorer/block/${e.height}`), `#${e.height}`, 'The block in the Divi Games explorer'), ` · tx ${Number(e.index) + 1} of ${b.txids?.length ?? '?'}`),
         ...row('Block hash', el('span', { class: 'mono' }, short(b.hash, 16))),
         ...row('State root', el('span', { class: 'mono' }, short(b.header?.state_root, 16))),
         ...row('Made by', el('span', { class: 'mono' }, short(b.header?.producer, 10)), ' (the sequencer, which signs each block)'),
